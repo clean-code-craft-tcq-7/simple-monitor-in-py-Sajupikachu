@@ -1,38 +1,38 @@
-import sys
-from time import sleep
+import unittest
+import unittest.mock as mock
+from monitor import vitals_ok, alert_not_in_range
 
 
-def display(message):
-    print(message)
-    for i in range(6):
-        print("\r* ", end="")
-        sys.stdout.flush()
-        sleep(1)
-        print("\r *", end="")
-        sys.stdout.flush()
-        sleep(1)
-    return False
+class MonitorTest(unittest.TestCase):
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_no_alert_when_in_range(self, mock_alert):
+        self.assertTrue(alert_not_in_range("Normal", 98, 95, 102))
+        mock_alert.assert_not_called()
 
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_alert_when_not_in_range(self, mock_alert):
+        self.assertFalse(alert_not_in_range("Temperature out of Range", 94, 95, 102))
+        mock_alert.assert_called_once_with("Temperature out of Range")
+    
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_temperature_ok(self, mock_alert):
+        self.assertTrue(vitals_ok(98, 75, 95))
+        mock_alert.assert_not_called()
 
-def is_inrange(value, min_value, max_value):
-    return min_value < value < max_value
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_pulse_rate_critical(self, mock_alert):
+        self.assertFalse(vitals_ok(98, 40, 95))
+        mock_alert.assert_called_once_with('Pulse Rate out of range!')
 
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_spo2_critical(self, mock_alert):
+        self.assertFalse(vitals_ok(98, 75, 85))
+        mock_alert.assert_called_once_with('Oxygen Saturation out of range!')
+    
+    @mock.patch('monitor.displayVitalsAlert')
+    def test_all_vitals_ok(self, mock_alert):
+        self.assertTrue(vitals_ok(98, 75, 95))
+        mock_alert.assert_not_called()
 
-def check_vitals(value, min_value, max_value, message):
-    return True if is_inrange(value, min_value, max_value) else display(message)
-
-
-def check_temp(temperature):
-    return check_vitals(temperature, 95, 102, "Temperature critical!")
-
-
-def check_pulse(pulseRate):
-    return check_vitals(pulseRate, 60, 100, "Pulse Rate is out of range!")
-
-
-def check_spo2(spo2):
-    return check_vitals(spo2, 90, 100, "Oxygen Saturation out of range!")
-
-
-def vitals_ok(temperature, pulse, spo2):
-    return check_temp(temperature) and check_pulse(pulse) and check_spo2(spo2)
+if __name__ == '__main__':
+  unittest.main()
