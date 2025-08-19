@@ -1,38 +1,34 @@
-import unittest
-import unittest.mock as mock
-from monitor import vitals_ok, alert_not_in_range
+from time import sleep
+import sys
 
+def displayVitalsAlert(message):
+  print(message)
+  for i in range(6):
+    print('\r* ', end='')
+    sys.stdout.flush()
+    sleep(1)
+    print('\r *', end='')
+    sys.stdout.flush()
+    sleep(1)
 
-class MonitorTest(unittest.TestCase):
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_no_alert_when_in_range(self, mock_alert):
-        self.assertTrue(alert_not_in_range("Normal", 98, 95, 102))
-        mock_alert.assert_not_called()
+def alert_not_in_range(message, value, min_value, max_value):
+  if not is_in_range(value, min_value, max_value):
+    displayVitalsAlert(message)
+    return False
+  return True
 
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_alert_when_not_in_range(self, mock_alert):
-        self.assertFalse(alert_not_in_range("Temperature out of Range", 94, 95, 102))
-        mock_alert.assert_called_once_with("Temperature out of Range")
-    
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_temperature_ok(self, mock_alert):
-        self.assertTrue(vitals_ok(98, 75, 95))
-        mock_alert.assert_not_called()
+def is_in_range(value, min_value, max_value):
+  return min_value <= value <= max_value
 
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_pulse_rate_critical(self, mock_alert):
-        self.assertFalse(vitals_ok(98, 40, 95))
-        mock_alert.assert_called_once_with('Pulse Rate out of range!')
+def isTemperatureOk(temperature):
+  return alert_not_in_range('Temperature out of range', temperature, 95, 102)
 
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_spo2_critical(self, mock_alert):
-        self.assertFalse(vitals_ok(98, 75, 85))
-        mock_alert.assert_called_once_with('Oxygen Saturation out of range!')
-    
-    @mock.patch('monitor.displayVitalsAlert')
-    def test_all_vitals_ok(self, mock_alert):
-        self.assertTrue(vitals_ok(98, 75, 95))
-        mock_alert.assert_not_called()
+def isPulseRateOk(pulseRate):
+  return alert_not_in_range('Pulse Rate out of range!', pulseRate, 60, 100)
 
-if __name__ == '__main__':
-  unittest.main()
+def isSpo2Ok(spo2):
+  return alert_not_in_range('Oxygen Saturation out of range!', spo2, 90, 100)
+
+def vitals_ok(temperature, pulseRate, spo2):
+  return isTemperatureOk(temperature) and \
+         isPulseRateOk(pulseRate) and isSpo2Ok(spo2)
